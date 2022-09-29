@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Flickerste</string>
+    <string name="imagegrid.error.title">Something went wrong</string>
+    <string name="imagegrid.error.description">Try loading the screen again</string>
 </resources>

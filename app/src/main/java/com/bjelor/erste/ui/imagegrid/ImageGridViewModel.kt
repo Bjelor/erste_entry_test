@@ -1,5 +1,8 @@
 package com.bjelor.erste.ui.imagegrid
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bjelor.erste.domain.GetImagesUseCase
@@ -7,6 +10,7 @@ import com.bjelor.erste.domain.Image
 import com.bjelor.erste.domain.ReloadImagesUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
@@ -18,13 +22,27 @@ class ImageGridViewModel(
     getImagesUseCase: GetImagesUseCase,
 ) : ViewModel() {
 
+    enum class ScreenState {
+        Loading,
+        Loaded,
+        Error,
+    }
+
     val images: StateFlow<List<Image>> = getImagesUseCase()
+        .onEach {
+            screenState = if (it.isNotEmpty()) {
+                ScreenState.Loaded
+            } else {
+                ScreenState.Error
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    var screenState: ScreenState by mutableStateOf(ScreenState.Loading)
+        private set
+
     init {
-        viewModelScope.launch {
-            reloadImagesUseCase(listOf("featured"))
-        }
+        reloadImages()
     }
 
     fun onImageClicked(image: Image) {
@@ -34,6 +52,17 @@ class ImageGridViewModel(
         )
 
         onNavigateToImageDetail(encodedUrl)
+    }
+
+    fun onRefresh() {
+        reloadImages()
+        screenState = ScreenState.Loading
+    }
+
+    private fun reloadImages() {
+        viewModelScope.launch {
+            reloadImagesUseCase(listOf("featured"))
+        }
     }
 
 }

@@ -16,13 +16,13 @@ class FlickrRepository(
 
     suspend fun reloadImages(tags: List<String>) {
         withContext(dispatchers.Default) {
-            runCatching {
+            val images = runCatching {
                 flickrService.getPublicPhotos(tags)
-            }.getOrThrow().let {
+            }.getOrNull()?.let {
                 imageMapper.from(it)
-            }.let {
-                flickrLocalCache.updateCache(it)
-            }
+            } ?: emptyList()
+
+            flickrLocalCache.updateCache(images)
         }
     }
 
