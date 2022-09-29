@@ -1,6 +1,7 @@
 package com.bjelor.erste.ui.imagegrid
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -18,6 +19,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import com.bjelor.erste.R
 
 @Composable
@@ -88,6 +90,7 @@ fun OpenSearchAppBar(
             OutlinedTextField(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(vertical = 2.dp)
                     .focusRequester(focusRequester),
                 value = searchText,
                 onValueChange = onSearchTextChanged,
