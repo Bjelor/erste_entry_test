@@ -24,6 +24,8 @@ import com.bjelor.erste.R
 import com.bjelor.erste.domain.Image
 import com.bjelor.erste.ui.theme.FlickersteTheme
 import com.bjelor.erste.ui.theme.VerticalGradientBlack
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import org.koin.androidx.compose.getViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -37,7 +39,8 @@ fun ImageGridScreen(
     val images = viewModel.images.collectAsState().value
     val screenState = viewModel.screenState
     val onImageClicked = viewModel::onImageClicked
-    val onRefresh = viewModel::onRefresh
+    val onSwipeToRefresh = viewModel::onSwipeToRefresh
+    val onReloadClick = viewModel::onReloadClick
 
     FlickersteTheme {
         Scaffold(
@@ -54,10 +57,13 @@ fun ImageGridScreen(
                     LoadingScreen(paddingValues)
                 }
                 ImageGridViewModel.ScreenState.Loaded -> {
-                    ImageGrid(paddingValues, images, onImageClicked)
+                    ImageGrid(paddingValues, images, false, onImageClicked, onSwipeToRefresh)
+                }
+                ImageGridViewModel.ScreenState.Refreshing -> {
+                    ImageGrid(paddingValues, images, true, onImageClicked, onSwipeToRefresh)
                 }
                 ImageGridViewModel.ScreenState.Error -> {
-                    ErrorScreen(paddingValues, onRefresh)
+                    ErrorScreen(paddingValues, onReloadClick)
                 }
             }
         }
@@ -68,39 +74,46 @@ fun ImageGridScreen(
 private fun ImageGrid(
     paddingValues: PaddingValues,
     images: List<Image>,
-    onImageClicked: (Image) -> Unit
+    isRefreshing: Boolean,
+    onImageClicked: (Image) -> Unit,
+    onRefresh: () -> Unit,
 ) {
-    LazyVerticalGrid(
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize(),
-        columns = GridCells.Fixed(3),
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(isRefreshing),
+        onRefresh = onRefresh,
     ) {
-        items(images) { image ->
-            Box(
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .clickable { onImageClicked(image) },
-            ) {
-                SubcomposeAsyncImage(
+        LazyVerticalGrid(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize(),
+            columns = GridCells.Fixed(3),
+        ) {
+            items(images) { image ->
+                Box(
                     modifier = Modifier
-                        .fillMaxSize(),
-                    model = image.url,
-                    loading = {
-                        CircularProgressIndicator()
-                    },
-                    contentScale = ContentScale.Crop,
-                    contentDescription = image.title,
-                )
-                Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Brush.verticalGradient(VerticalGradientBlack))
-                        .align(Alignment.BottomCenter),
-                    text = image.title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                        .aspectRatio(1f)
+                        .clickable { onImageClicked(image) },
+                ) {
+                    SubcomposeAsyncImage(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        model = image.url,
+                        loading = {
+                            CircularProgressIndicator()
+                        },
+                        contentScale = ContentScale.Crop,
+                        contentDescription = image.title,
+                    )
+                    Text(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Brush.verticalGradient(VerticalGradientBlack))
+                            .align(Alignment.BottomCenter),
+                        text = image.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -161,7 +174,10 @@ fun ImageGridPreview() {
             Image("", "Else"),
             Image("", "Anything"),
         ),
-    ) {}
+        false,
+        {},
+        {},
+    )
 }
 
 @Preview(showBackground = true)

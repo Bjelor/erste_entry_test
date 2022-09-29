@@ -48,7 +48,8 @@ android {
 dependencies {
 
 
-    implementation(libs.accompanist)
+    implementation(libs.accompanistNavigation)
+    implementation(libs.accompanistSwipeRefresh)
     implementation(libs.activityCompose)
     implementation(libs.coil)
     implementation(libs.composeMaterial)

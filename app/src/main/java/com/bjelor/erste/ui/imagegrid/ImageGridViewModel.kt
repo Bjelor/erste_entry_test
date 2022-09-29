@@ -23,6 +23,7 @@ class ImageGridViewModel(
 ) : ViewModel() {
 
     enum class ScreenState {
+        Refreshing,
         Loading,
         Loaded,
         Error,
@@ -54,7 +55,17 @@ class ImageGridViewModel(
         onNavigateToImageDetail(encodedUrl)
     }
 
-    fun onRefresh() {
+    fun onSwipeToRefresh() {
+        reloadImages()
+        screenState = ScreenState.Refreshing
+    }
+
+    fun onReloadClick() {
+        reloadImages()
+        screenState = ScreenState.Loading
+    }
+
+    fun onSearchClick() {
         reloadImages()
         screenState = ScreenState.Loading
     }
