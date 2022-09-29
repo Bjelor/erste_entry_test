@@ -21,21 +21,21 @@ fun ImageDetailScreen(onNavigateBack: () -> Unit) {
 
     val image = viewModel.image.collectAsState().value
 
-    image?.let { ImageDetail(onNavigateBack, it) }
+    ImageDetail(onNavigateBack, image)
 }
 
 
 @Composable
 fun ImageDetail(
     onNavigateBack: () -> Unit,
-    image: Image,
+    image: Image?,
 ) {
     FlickersteTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(text = image.title)
+                        Text(text = image?.title ?: "")
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
@@ -45,17 +45,19 @@ fun ImageDetail(
                 )
             },
         ) { paddingValues ->
-            SubcomposeAsyncImage(
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .fillMaxSize(),
-                model = image.url,
-                loading = {
-                    CircularProgressIndicator()
-                },
-                contentScale = ContentScale.Fit,
-                contentDescription = null
-            )
+            image?.let { image ->
+                SubcomposeAsyncImage(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .fillMaxSize(),
+                    model = image.url,
+                    loading = {
+                        CircularProgressIndicator()
+                    },
+                    contentScale = ContentScale.Fit,
+                    contentDescription = null
+                )
+            }
         }
     }
 }
