@@ -105,6 +105,7 @@ private fun ImageGrid(
                         loading = {
                             CircularProgressIndicator(
                                 modifier = Modifier
+                                    .wrapContentSize()
                                     .size(64.dp)
                                     .align(Alignment.Center),
                             )
