@@ -6,6 +6,6 @@ class ImageMapper {
 
     fun from(flickrResponse: FlickrResponse): List<Image> =
         flickrResponse.items.map { item ->
-            Image(item.media.url, item.description)
+            Image(item.media.url, item.title)
         }
 }
