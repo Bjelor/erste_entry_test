@@ -37,7 +37,7 @@ fun ImageGridScreen(
         getViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
 
     val images = viewModel.images.collectAsState().value
-    val screenState = viewModel.screenState
+    val gridState = viewModel.gridState
     val onImageClicked = viewModel::onImageClicked
     val onSwipeToRefresh = viewModel::onSwipeToRefresh
     val onReloadClick = viewModel::onReloadClick
@@ -45,24 +45,28 @@ fun ImageGridScreen(
     FlickersteTheme {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = {
-                        Text(text = stringResource(id = R.string.app_name))
-                    },
+                SearchAppBar(
+                    viewModel.isSearchBarOpen,
+                    viewModel.searchText,
+                    viewModel::onSearchTextChange,
+                    viewModel::onClearClick,
+                    viewModel::onSearchBackClick,
+                    viewModel::onSearchConfirm,
+                    viewModel::onSearchClick,
                 )
             },
         ) { paddingValues ->
-            when (screenState) {
-                ImageGridViewModel.ScreenState.Loading -> {
+            when (gridState) {
+                ImageGridViewModel.GridState.Loading -> {
                     LoadingScreen(paddingValues)
                 }
-                ImageGridViewModel.ScreenState.Loaded -> {
-                    ImageGrid(paddingValues, images, false, onImageClicked, onSwipeToRefresh)
+                ImageGridViewModel.GridState.Loaded,
+                ImageGridViewModel.GridState.Refreshing,
+                -> {
+                    val isRefreshing = gridState == ImageGridViewModel.GridState.Refreshing
+                    ImageGrid(paddingValues, images, isRefreshing, onImageClicked, onSwipeToRefresh)
                 }
-                ImageGridViewModel.ScreenState.Refreshing -> {
-                    ImageGrid(paddingValues, images, true, onImageClicked, onSwipeToRefresh)
-                }
-                ImageGridViewModel.ScreenState.Error -> {
+                ImageGridViewModel.GridState.Error -> {
                     ErrorScreen(paddingValues, onReloadClick)
                 }
             }
@@ -99,7 +103,11 @@ private fun ImageGrid(
                             .fillMaxSize(),
                         model = image.url,
                         loading = {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .align(Alignment.Center),
+                            )
                         },
                         contentScale = ContentScale.Crop,
                         contentDescription = image.title,

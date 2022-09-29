@@ -22,7 +22,7 @@ class ImageGridViewModel(
     getImagesUseCase: GetImagesUseCase,
 ) : ViewModel() {
 
-    enum class ScreenState {
+    enum class GridState {
         Refreshing,
         Loading,
         Loaded,
@@ -31,15 +31,21 @@ class ImageGridViewModel(
 
     val images: StateFlow<List<Image>> = getImagesUseCase()
         .onEach {
-            screenState = if (it.isNotEmpty()) {
-                ScreenState.Loaded
+            gridState = if (it.isNotEmpty()) {
+                GridState.Loaded
             } else {
-                ScreenState.Error
+                GridState.Error
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    var screenState: ScreenState by mutableStateOf(ScreenState.Loading)
+    var gridState: GridState by mutableStateOf(GridState.Loading)
+        private set
+
+    var isSearchBarOpen: Boolean by mutableStateOf(false)
+        private set
+
+    var searchText: String by mutableStateOf("")
         private set
 
     init {
@@ -57,22 +63,40 @@ class ImageGridViewModel(
 
     fun onSwipeToRefresh() {
         reloadImages()
-        screenState = ScreenState.Refreshing
+        gridState = GridState.Refreshing
     }
 
     fun onReloadClick() {
         reloadImages()
-        screenState = ScreenState.Loading
+        gridState = GridState.Loading
     }
 
     fun onSearchClick() {
+        isSearchBarOpen = true
+    }
+
+    fun onSearchTextChange(value: String) {
+        searchText = value
+    }
+
+    fun onClearClick() {
+        searchText = ""
+    }
+
+    fun onSearchBackClick() {
+        isSearchBarOpen = false
+        searchText = ""
+    }
+
+    fun onSearchConfirm() {
         reloadImages()
-        screenState = ScreenState.Loading
+        isSearchBarOpen = false
+        gridState = GridState.Refreshing
     }
 
     private fun reloadImages() {
         viewModelScope.launch {
-            reloadImagesUseCase(listOf("featured"))
+            reloadImagesUseCase(searchText.split(","))
         }
     }
 
