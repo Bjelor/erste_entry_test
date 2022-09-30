@@ -22,5 +22,4 @@ class ImageDetailViewModel(
         val url = checkNotNull(savedStateHandle.get<String>("url"))
         return getImageByUrlUseCase(url)
     }
-
 }

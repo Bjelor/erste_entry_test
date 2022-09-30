@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bjelor.erste.R
 
@@ -31,6 +33,7 @@ fun SearchAppBar(
     onNavigateBack: () -> Unit,
     onConfirm: () -> Unit,
     onSearchClick: () -> Unit,
+    onModeClick: () -> Unit,
 ) {
     if (isOpen) {
         OpenSearchAppBar(
@@ -41,7 +44,7 @@ fun SearchAppBar(
             onConfirm = onConfirm
         )
     } else {
-        ClosedSearchAppBar(searchText, onSearchClick)
+        ClosedSearchAppBar(searchText, onSearchClick, onModeClick)
     }
 
 }
@@ -50,6 +53,7 @@ fun SearchAppBar(
 fun ClosedSearchAppBar(
     searchText: String,
     onSearchClick: () -> Unit,
+    onModeClick: () -> Unit,
 ) {
     TopAppBar(
         title = {
@@ -62,6 +66,9 @@ fun ClosedSearchAppBar(
         actions = {
             IconButton(onClick = onSearchClick) {
                 Icon(imageVector = Icons.Filled.Search, contentDescription = null)
+            }
+            IconButton(onClick = onModeClick) {
+                Icon(imageVector = Icons.Filled.List, contentDescription = null)
             }
         }
     )
@@ -120,4 +127,16 @@ fun OpenSearchAppBar(
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
+}
+
+@Preview
+@Composable
+private fun ClosedSearchAppBarPreview() {
+    ClosedSearchAppBar(searchText = "Title", {}, {})
+}
+
+@Preview
+@Composable
+private fun OpenSearchAppBarPreview() {
+    OpenSearchAppBar(searchText = "Title", {}, {}, {}, {})
 }

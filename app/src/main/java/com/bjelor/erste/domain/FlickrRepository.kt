@@ -16,16 +16,18 @@ class FlickrRepository(
 
     suspend fun reloadImages(tags: List<String>) {
         withContext(dispatchers.Default) {
-            val images = runCatching {
-                flickrService.getPublicPhotos(tags)
-            }.getOrNull()?.let {
-                imageMapper.from(it)
-            } ?: emptyList()
+            val result = runCatching {
+                FlickrResult.Success(
+                    flickrService.getPublicPhotos(tags.joinToString()).let { imageMapper.from(it) }
+                )
+            }.getOrElse {
+                FlickrResult.Error
+            }
 
-            flickrLocalCache.updateCache(images)
+            flickrLocalCache.updateCache(result)
         }
     }
 
-    fun getImages(): SharedFlow<List<Image>> = flickrLocalCache.imagesCache
+    fun getFlickrResult(): SharedFlow<FlickrResult> = flickrLocalCache.imagesCache
 
 }

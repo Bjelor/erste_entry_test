@@ -13,7 +13,9 @@ import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun FlickersteComposeApp() {
+fun FlickersteComposeApp(
+    onShare: (String) -> Unit,
+) {
     FlickersteTheme {
         val navController = rememberAnimatedNavController()
 
@@ -65,7 +67,7 @@ fun FlickersteComposeApp() {
                     fadeOut()
                 },
             ) {
-                ImageDetailScreen {
+                ImageDetailScreen(onShare) {
                     navController.popBackStack()
                 }
             }

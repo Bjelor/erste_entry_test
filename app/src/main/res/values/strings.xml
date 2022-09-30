@@ -2,5 +2,7 @@
     <string name="app_name">Flickerste</string>
     <string name="imagegrid.error.title">Something went wrong</string>
     <string name="imagegrid.error.description">Try loading the screen again</string>
+    <string name="imagegrid.empty.title">No results for your query</string>
+    <string name="imagegrid.empty.description">Try searching for something else</string>
     <string name="imagegrid.search.placeholder">Search for tag…</string>
 </resources>

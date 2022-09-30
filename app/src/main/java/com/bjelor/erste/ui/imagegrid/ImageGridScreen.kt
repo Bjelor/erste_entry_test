@@ -3,11 +3,14 @@ package com.bjelor.erste.ui.imagegrid
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -29,6 +32,7 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import org.koin.androidx.compose.getViewModel
 import org.koin.core.parameter.parametersOf
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ImageGridScreen(
     onNavigateToImageDetail: (String) -> Unit,
@@ -37,7 +41,9 @@ fun ImageGridScreen(
         getViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
 
     val images = viewModel.images.collectAsState().value
+    val mode = viewModel.mode
     val gridState = viewModel.gridState
+    val searchTags = viewModel.searchTags
     val onImageClicked = viewModel::onImageClicked
     val onSwipeToRefresh = viewModel::onSwipeToRefresh
     val onReloadClick = viewModel::onReloadClick
@@ -53,21 +59,54 @@ fun ImageGridScreen(
                     viewModel::onSearchBackClick,
                     viewModel::onSearchConfirm,
                     viewModel::onSearchClick,
+                    viewModel::onModeClick,
                 )
             },
         ) { paddingValues ->
-            when (gridState) {
-                ImageGridViewModel.GridState.Loading -> {
-                    LoadingScreen(paddingValues)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                )
+                {
+                    items(searchTags) { tag ->
+                        Chip(onClick = { viewModel.onChipClicked(tag) }) {
+                            Text(text = tag)
+                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                        }
+                    }
                 }
-                ImageGridViewModel.GridState.Loaded,
-                ImageGridViewModel.GridState.Refreshing,
-                -> {
-                    val isRefreshing = gridState == ImageGridViewModel.GridState.Refreshing
-                    ImageGrid(paddingValues, images, isRefreshing, onImageClicked, onSwipeToRefresh)
-                }
-                ImageGridViewModel.GridState.Error -> {
-                    ErrorScreen(paddingValues, onReloadClick)
+
+                when (gridState) {
+                    ImageGridViewModel.GridState.Loading -> {
+                        LoadingScreen(paddingValues)
+                    }
+
+                    ImageGridViewModel.GridState.Loaded,
+                    ImageGridViewModel.GridState.Refreshing,
+                    -> {
+                        val isRefreshing = gridState == ImageGridViewModel.GridState.Refreshing
+                        ImageGrid(
+                            paddingValues,
+                            mode,
+                            images,
+                            isRefreshing,
+                            onImageClicked,
+                            onSwipeToRefresh
+                        )
+                    }
+
+                    ImageGridViewModel.GridState.Error -> {
+                        ErrorScreen(paddingValues, onReloadClick)
+                    }
+
+                    ImageGridViewModel.GridState.Empty -> {
+                        EmptyScreen(paddingValues)
+                    }
                 }
             }
         }
@@ -77,6 +116,7 @@ fun ImageGridScreen(
 @Composable
 private fun ImageGrid(
     paddingValues: PaddingValues,
+    mode: ImageGridViewModel.Mode,
     images: List<Image>,
     isRefreshing: Boolean,
     onImageClicked: (Image) -> Unit,
@@ -90,7 +130,7 @@ private fun ImageGrid(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize(),
-            columns = GridCells.Fixed(3),
+            columns = GridCells.Fixed(mode.columns),
         ) {
             items(images) { image ->
                 Box(
@@ -172,12 +212,30 @@ private fun ErrorScreen(
     }
 }
 
+@Composable
+private fun EmptyScreen(paddingValues: PaddingValues) {
+    Column(
+        modifier = Modifier
+            .padding(paddingValues)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(id = R.string.imagegrid_empty_title)
+        )
+        Text(
+            text = stringResource(id = R.string.imagegrid_empty_description)
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
 fun ImageGridPreview() {
     ImageGrid(
         PaddingValues(),
+        ImageGridViewModel.Mode.Grid,
         listOf(
             Image("", "Something"),
             Image("", "Else"),
@@ -203,4 +261,12 @@ fun ErrorScreenPreview() {
     ErrorScreen(
         PaddingValues(),
     ) {}
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EmptyScreenPreview() {
+    EmptyScreen(
+        PaddingValues(),
+    )
 }

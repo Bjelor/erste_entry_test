@@ -4,5 +4,5 @@ import kotlinx.coroutines.flow.SharedFlow
 
 class GetImagesUseCase(private val flickrRepository: FlickrRepository) {
 
-    operator fun invoke(): SharedFlow<List<Image>> = flickrRepository.getImages()
+    operator fun invoke(): SharedFlow<FlickrResult> = flickrRepository.getFlickrResult()
 }
