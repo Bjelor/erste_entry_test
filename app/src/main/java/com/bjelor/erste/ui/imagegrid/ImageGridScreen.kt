@@ -47,7 +47,6 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import org.koin.androidx.compose.getViewModel
 import org.koin.core.parameter.parametersOf
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ImageGridScreen(
     onNavigateToImageDetail: (String) -> Unit,
@@ -56,69 +55,90 @@ fun ImageGridScreen(
         getViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
 
     val state = viewModel.state.collectAsState().value
-    val onImageClicked = viewModel::onImageClicked
-    val onSwipeToRefresh = viewModel::onSwipeToRefresh
-    val onReloadClick = viewModel::onReloadClick
 
-    FlickersteTheme {
-        Scaffold(
-            topBar = {
-                SearchAppBar(
-                    state.isSearchBarOpen,
-                    state.searchText,
-                    viewModel::onSearchTextChange,
-                    viewModel::onClearClick,
-                    viewModel::onSearchBackClick,
-                    viewModel::onSearchConfirm,
-                    viewModel::onSearchClick,
-                    viewModel::onModeClick,
-                )
-            },
-        ) { paddingValues ->
-            Column(
+    val listeners = ImageGridScreenListeners(
+        appBar = ImageGridScreenListeners.AppBar(
+            viewModel::onSearchTextChange,
+            viewModel::onClearClick,
+            viewModel::onSearchBackClick,
+            viewModel::onSearchConfirm,
+            viewModel::onSearchClick,
+            viewModel::onModeClick,
+        ),
+        grid = ImageGridScreenListeners.Grid(
+            viewModel::onImageClicked,
+            viewModel::onSwipeToRefresh,
+            viewModel::onReloadClick,
+        ),
+        onChipClick = viewModel::onChipClick,
+    )
+
+    ImageGridScreen(state, listeners)
+}
+
+@Composable
+@OptIn(ExperimentalMaterialApi::class)
+private fun ImageGridScreen(
+    state: ImageGridUiState,
+    listeners: ImageGridScreenListeners,
+) {
+    Scaffold(
+        topBar = {
+            SearchAppBar(
+                state.isSearchBarOpen,
+                state.searchText,
+                listeners.appBar.onSearchTextChange,
+                listeners.appBar.onClearClick,
+                listeners.appBar.onNavigateBack,
+                listeners.appBar.onConfirm,
+                listeners.appBar.onSearchClick,
+                listeners.appBar.onModeClick,
+            )
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyRow(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-                {
-                    items(state.searchTags) { tag ->
-                        Chip(onClick = { viewModel.onChipClicked(tag) }) {
-                            Text(text = tag)
-                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                        }
+                    .fillMaxWidth()
+            )
+            {
+                items(state.searchTags) { tag ->
+                    Chip(onClick = { listeners.onChipClick(tag) }) {
+                        Text(text = tag)
+                        Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
                     }
                 }
+            }
 
-                when (state.gridState) {
-                    ImageGridUiState.GridState.Loading -> {
-                        LoadingScreen(paddingValues)
-                    }
+            when (state.gridState) {
+                ImageGridUiState.GridState.Loading -> {
+                    LoadingScreen(paddingValues)
+                }
 
-                    ImageGridUiState.GridState.Loaded,
-                    ImageGridUiState.GridState.Refreshing,
-                    -> {
-                        val isRefreshing = state.gridState == ImageGridUiState.GridState.Refreshing
-                        ImageGrid(
-                            paddingValues,
-                            state.gridMode,
-                            state.images,
-                            isRefreshing,
-                            onImageClicked,
-                            onSwipeToRefresh
-                        )
-                    }
+                ImageGridUiState.GridState.Loaded,
+                ImageGridUiState.GridState.Refreshing,
+                -> {
+                    val isRefreshing = state.gridState == ImageGridUiState.GridState.Refreshing
+                    ImageGrid(
+                        paddingValues,
+                        state.gridMode,
+                        state.images,
+                        isRefreshing,
+                        listeners.grid.onImageClicked,
+                        listeners.grid.onRefresh
+                    )
+                }
 
-                    ImageGridUiState.GridState.Error -> {
-                        ErrorScreen(paddingValues, onReloadClick)
-                    }
+                ImageGridUiState.GridState.Error -> {
+                    ErrorScreen(paddingValues, listeners.grid.onRefresh)
+                }
 
-                    ImageGridUiState.GridState.Empty -> {
-                        EmptyScreen(paddingValues)
-                    }
+                ImageGridUiState.GridState.Empty -> {
+                    EmptyScreen(paddingValues)
                 }
             }
         }
@@ -244,41 +264,79 @@ private fun EmptyScreen(paddingValues: PaddingValues) {
 
 @Preview(showBackground = true)
 @Composable
-fun ImageGridPreview() {
-    ImageGrid(
-        PaddingValues(),
-        ImageGridUiState.GridMode.Grid,
-        listOf(
-            Image("", "Something"),
-            Image("", "Else"),
-            Image("", "Anything"),
-        ),
-        false,
-        {},
-        {},
-    )
+fun ImageGridScreenLoadedGridPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                listOf(
+                    Image("", "Something"),
+                    Image("", "Else"),
+                    Image("", "Anything"),
+                ),
+                gridState = ImageGridUiState.GridState.Loaded,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun LoadingScreenPreview() {
-    LoadingScreen(
-        PaddingValues(),
-    )
+fun ImageGridScreenLoadedListPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                listOf(
+                    Image("", "Something"),
+                    Image("", "Else"),
+                    Image("", "Anything"),
+                ),
+                gridState = ImageGridUiState.GridState.Loaded,
+                gridMode = ImageGridUiState.GridMode.List,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun ErrorScreenPreview() {
-    ErrorScreen(
-        PaddingValues(),
-    ) {}
+fun ImageGridScreenLoadingPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Loading,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun EmptyScreenPreview() {
-    EmptyScreen(
-        PaddingValues(),
-    )
+fun ImageGridScreenErrorPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Error,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ImageGridScreenEmptyPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Empty,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }

@@ -2,8 +2,14 @@ package com.bjelor.erste.ui.imagedetail
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.*
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -15,7 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.datasource.LoremIpsum
 import coil.compose.SubcomposeAsyncImage
 import com.bjelor.erste.domain.Image
 import com.bjelor.erste.ui.theme.FlickersteTheme
@@ -48,7 +57,12 @@ fun ImageDetail(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(text = image?.title ?: "")
+                        Text(
+                            modifier = Modifier.fillMaxWidth(),
+                            text = image?.title ?: "",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
@@ -93,10 +107,12 @@ fun ImageDetail(
 
 @Preview(showBackground = true)
 @Composable
-fun ImageDetailPreview() {
-    ImageDetail(
-        null,
-        {},
-        {}
-    )
+fun ImageDetailPreview(@PreviewParameter(LoremIpsum::class) text: String) {
+    FlickersteTheme {
+        ImageDetail(
+            Image("", text),
+            {},
+            {}
+        )
+    }
 }

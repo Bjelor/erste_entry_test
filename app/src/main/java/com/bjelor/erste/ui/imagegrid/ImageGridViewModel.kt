@@ -157,7 +157,7 @@ class ImageGridViewModel(
         isSearchBarOpen.value = false
     }
 
-    fun onChipClicked(value: String) {
+    fun onChipClick(value: String) {
         searchTags.update { searchTags -> searchTags.filterNot { it == value } }
         reloadImages()
         loadingState.value = LoadingState.Refreshing
