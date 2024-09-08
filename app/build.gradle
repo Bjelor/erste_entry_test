@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.lifecycleViewModel)
     implementation(libs.moshi)
     implementation(libs.moshiKotlin)
+    implementation(libs.okhttpLogging)
     implementation(libs.retrofit)
     implementation(libs.retrofitMoshiConverter)
 

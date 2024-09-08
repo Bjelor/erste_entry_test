@@ -1,5 +1,6 @@
 package com.bjelor.erste.di
 
+import com.bjelor.erste.data.FlickrApiHeaderInterceptor
 import com.bjelor.erste.data.FlickrLocalCache
 import com.bjelor.erste.data.FlickrService
 import com.bjelor.erste.data.ImageMapper
@@ -12,15 +13,21 @@ import com.bjelor.erste.ui.imagedetail.ImageDetailViewModel
 import com.bjelor.erste.ui.imagegrid.ImageGridViewModel
 import kotlinx.coroutines.Dispatchers
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModelOf
 import org.koin.dsl.module
 import retrofit2.Retrofit
 
 val appModule = module {
 
-    viewModel { ImageGridViewModel(get(), get(), get()) }
+    viewModelOf(::ImageGridViewModel)
     viewModel { parametersHolder -> ImageDetailViewModel(parametersHolder.get(), get()) }
 
-    single { RetrofitFactory().create() }
+    single(qualifier = RetrofitInjection.Flickr.qualifier) {
+        RetrofitFactory().create(
+            RetrofitInjection.Flickr.baseUrl,
+            FlickrApiHeaderInterceptor(),
+        )
+    }
 
     factory { ImageMapper() }
 
@@ -32,7 +39,7 @@ val appModule = module {
 
     single { FlickrLocalCache() }
 
-    factory { get<Retrofit>().create(FlickrService::class.java) }
+    factory { get<Retrofit>(RetrofitInjection.Flickr.qualifier).create(FlickrService::class.java) }
 
     single { Dispatchers }
 }
