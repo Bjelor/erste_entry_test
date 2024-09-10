@@ -2,16 +2,35 @@ package com.bjelor.erste.ui.imagegrid
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material.Chip
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -27,105 +46,120 @@ import com.bjelor.erste.R
 import com.bjelor.erste.domain.Image
 import com.bjelor.erste.ui.theme.FlickersteTheme
 import com.bjelor.erste.ui.theme.VerticalGradientBlack
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import org.koin.androidx.compose.getViewModel
+import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ImageGridScreen(
     onNavigateToImageDetail: (String) -> Unit,
 ) {
     val viewModel: ImageGridViewModel =
-        getViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
+        koinViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
 
-    val images = viewModel.images.collectAsState().value
-    val mode = viewModel.mode
-    val gridState = viewModel.gridState
-    val searchTags = viewModel.searchTags
-    val onImageClicked = viewModel::onImageClicked
-    val onSwipeToRefresh = viewModel::onSwipeToRefresh
-    val onReloadClick = viewModel::onReloadClick
+    val state = viewModel.state.collectAsState().value
 
-    FlickersteTheme {
-        Scaffold(
-            topBar = {
-                SearchAppBar(
-                    viewModel.isSearchBarOpen,
-                    viewModel.searchText,
-                    viewModel::onSearchTextChange,
-                    viewModel::onClearClick,
-                    viewModel::onSearchBackClick,
-                    viewModel::onSearchConfirm,
-                    viewModel::onSearchClick,
-                    viewModel::onModeClick,
-                )
-            },
-        ) { paddingValues ->
-            Column(
+    val listeners = ImageGridScreenListeners(
+        appBar = ImageGridScreenListeners.AppBar(
+            viewModel::onSearchTextChange,
+            viewModel::onClearClick,
+            viewModel::onSearchBackClick,
+            viewModel::onSearchConfirm,
+            viewModel::onSearchClick,
+            viewModel::onModeClick,
+        ),
+        grid = ImageGridScreenListeners.Grid(
+            viewModel::onImageClicked,
+            viewModel::onSwipeToRefresh,
+            viewModel::onReloadClick,
+        ),
+        onChipClick = viewModel::onChipClick,
+    )
+
+    ImageGridScreen(state, listeners)
+}
+
+@Composable
+@OptIn(ExperimentalMaterialApi::class)
+private fun ImageGridScreen(
+    state: ImageGridUiState,
+    listeners: ImageGridScreenListeners,
+) {
+    Scaffold(
+        topBar = {
+            SearchAppBar(
+                state.isSearchBarOpen,
+                state.searchText,
+                listeners.appBar.onSearchTextChange,
+                listeners.appBar.onClearClick,
+                listeners.appBar.onNavigateBack,
+                listeners.appBar.onConfirm,
+                listeners.appBar.onSearchClick,
+                listeners.appBar.onModeClick,
+            )
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyRow(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-                {
-                    items(searchTags) { tag ->
-                        Chip(onClick = { viewModel.onChipClicked(tag) }) {
-                            Text(text = tag)
-                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                        }
+                    .fillMaxWidth()
+            )
+            {
+                items(state.searchTags) { tag ->
+                    Chip(onClick = { listeners.onChipClick(tag) }) {
+                        Text(text = tag)
+                        Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
                     }
                 }
+            }
 
-                when (gridState) {
-                    ImageGridViewModel.GridState.Loading -> {
-                        LoadingScreen(paddingValues)
-                    }
+            when (state.gridState) {
+                ImageGridUiState.GridState.Loading -> {
+                    LoadingScreen(paddingValues)
+                }
 
-                    ImageGridViewModel.GridState.Loaded,
-                    ImageGridViewModel.GridState.Refreshing,
-                    -> {
-                        val isRefreshing = gridState == ImageGridViewModel.GridState.Refreshing
-                        ImageGrid(
-                            paddingValues,
-                            mode,
-                            images,
-                            isRefreshing,
-                            onImageClicked,
-                            onSwipeToRefresh
-                        )
-                    }
+                ImageGridUiState.GridState.Loaded,
+                ImageGridUiState.GridState.Refreshing,
+                -> {
+                    val isRefreshing = state.gridState == ImageGridUiState.GridState.Refreshing
+                    ImageGrid(
+                        paddingValues,
+                        state.gridMode,
+                        state.images,
+                        isRefreshing,
+                        listeners.grid.onImageClicked,
+                        listeners.grid.onRefresh
+                    )
+                }
 
-                    ImageGridViewModel.GridState.Error -> {
-                        ErrorScreen(paddingValues, onReloadClick)
-                    }
+                ImageGridUiState.GridState.Error -> {
+                    ErrorScreen(paddingValues, listeners.grid.onRefresh)
+                }
 
-                    ImageGridViewModel.GridState.Empty -> {
-                        EmptyScreen(paddingValues)
-                    }
+                ImageGridUiState.GridState.Empty -> {
+                    EmptyScreen(paddingValues)
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun ImageGrid(
     paddingValues: PaddingValues,
-    mode: ImageGridViewModel.Mode,
+    mode: ImageGridUiState.GridMode,
     images: List<Image>,
     isRefreshing: Boolean,
     onImageClicked: (Image) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    SwipeRefresh(
-        state = rememberSwipeRefreshState(isRefreshing),
-        onRefresh = onRefresh,
-    ) {
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, onRefresh)
+
+    Box(Modifier.pullRefresh(pullRefreshState)) {
         LazyVerticalGrid(
             modifier = Modifier
                 .padding(paddingValues)
@@ -159,12 +193,15 @@ private fun ImageGrid(
                             .background(Brush.verticalGradient(VerticalGradientBlack))
                             .align(Alignment.BottomCenter),
                         text = image.title,
+                        color = MaterialTheme.colors.surface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
+
+        PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -232,41 +269,79 @@ private fun EmptyScreen(paddingValues: PaddingValues) {
 
 @Preview(showBackground = true)
 @Composable
-fun ImageGridPreview() {
-    ImageGrid(
-        PaddingValues(),
-        ImageGridViewModel.Mode.Grid,
-        listOf(
-            Image("", "Something"),
-            Image("", "Else"),
-            Image("", "Anything"),
-        ),
-        false,
-        {},
-        {},
-    )
+fun ImageGridScreenLoadedGridPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                listOf(
+                    Image("", "Something", ""),
+                    Image("", "Else", ""),
+                    Image("", "Anything", ""),
+                ),
+                gridState = ImageGridUiState.GridState.Loaded,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun LoadingScreenPreview() {
-    LoadingScreen(
-        PaddingValues(),
-    )
+fun ImageGridScreenLoadedListPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                listOf(
+                    Image("", "Something", ""),
+                    Image("", "Else", ""),
+                    Image("", "Anything", ""),
+                ),
+                gridState = ImageGridUiState.GridState.Loaded,
+                gridMode = ImageGridUiState.GridMode.List,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun ErrorScreenPreview() {
-    ErrorScreen(
-        PaddingValues(),
-    ) {}
+fun ImageGridScreenLoadingPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Loading,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun EmptyScreenPreview() {
-    EmptyScreen(
-        PaddingValues(),
-    )
+fun ImageGridScreenErrorPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Error,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ImageGridScreenEmptyPreview() {
+    FlickersteTheme {
+        ImageGridScreen(
+            state = ImageGridUiState(
+                images = emptyList(),
+                gridState = ImageGridUiState.GridState.Empty,
+            ),
+            listeners = ImageGridScreenListeners(),
+        )
+    }
 }

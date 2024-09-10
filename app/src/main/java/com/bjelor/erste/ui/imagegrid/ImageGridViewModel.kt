@@ -1,15 +1,19 @@
 package com.bjelor.erste.ui.imagegrid
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bjelor.erste.domain.FlickrResult
 import com.bjelor.erste.domain.GetImagesUseCase
 import com.bjelor.erste.domain.Image
 import com.bjelor.erste.domain.ReloadImagesUseCase
-import kotlinx.coroutines.flow.*
+import com.bjelor.erste.domain.combine
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -20,57 +24,81 @@ class ImageGridViewModel(
     getImagesUseCase: GetImagesUseCase,
 ) : ViewModel() {
 
-    enum class GridState {
-        Refreshing,
+    enum class LoadingState {
         Loading,
-        Loaded,
-        Error,
-        Empty,
+        Refreshing,
     }
 
-    enum class Mode(val columns: Int) {
-        Grid(4),
-        List(1),
-    }
+    private val imagesResult: Flow<FlickrResult> = getImagesUseCase()
+        .onEach {
+            loadingState.value = null
+        }
 
-    val images: StateFlow<List<Image>> = getImagesUseCase()
-        .onEach { result ->
-            gridState = when (result) {
+    private val isSearchBarOpen: MutableStateFlow<Boolean> =
+        MutableStateFlow(false)
+
+    private val loadingState: MutableStateFlow<LoadingState?> =
+        MutableStateFlow(null)
+
+    private val gridMode: MutableStateFlow<ImageGridUiState.GridMode> =
+        MutableStateFlow(ImageGridUiState.GridMode.Grid)
+
+    private val searchText: MutableStateFlow<String> =
+        MutableStateFlow("")
+
+    private val searchTags: MutableStateFlow<Set<String>> =
+        MutableStateFlow(emptySet())
+
+    val state: StateFlow<ImageGridUiState> = combine(
+        imagesResult,
+        loadingState,
+        isSearchBarOpen,
+        gridMode,
+        searchText,
+        searchTags,
+    ) {
+            imagesResult,
+            loadingState,
+            isSearchBarOpen,
+            gridMode,
+            searchText,
+            searchTags,
+        ->
+        val images = imagesResult.images
+
+        val gridState = when (loadingState) {
+            LoadingState.Loading -> ImageGridUiState.GridState.Loading
+            LoadingState.Refreshing -> ImageGridUiState.GridState.Refreshing
+            null -> when (imagesResult) {
                 is FlickrResult.Error -> {
-                    GridState.Error
+                    // TODO: Better representation of Error state with cached images
+                    if (images.isNotEmpty()) {
+                        ImageGridUiState.GridState.Loaded
+                    } else {
+                        ImageGridUiState.GridState.Error
+                    }
                 }
 
                 is FlickrResult.Success -> {
-                    if (result.images.isNotEmpty()) {
-                        GridState.Loaded
+                    if (images.isNotEmpty()) {
+                        ImageGridUiState.GridState.Loaded
                     } else {
-                        GridState.Empty
+                        ImageGridUiState.GridState.Empty
                     }
                 }
             }
         }
-        .map { result ->
-            when (result) {
-                is FlickrResult.Error -> emptyList()
-                is FlickrResult.Success -> result.images
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    var gridState: GridState by mutableStateOf(GridState.Loading)
-        private set
-
-    var isSearchBarOpen: Boolean by mutableStateOf(false)
-        private set
-
-    var mode: Mode by mutableStateOf(Mode.Grid)
-        private set
-
-    var searchText: String by mutableStateOf("")
-        private set
-
-    var searchTags: List<String> by mutableStateOf(emptyList())
-        private set
+        ImageGridUiState(
+            images,
+            gridState,
+            isSearchBarOpen,
+            gridMode,
+            searchText,
+            searchTags.toList()
+        )
+    }
+        .stateIn(viewModelScope, SharingStarted.Lazily, ImageGridUiState())
 
     init {
         reloadImages()
@@ -87,23 +115,23 @@ class ImageGridViewModel(
 
     fun onSwipeToRefresh() {
         reloadImages()
-        gridState = GridState.Refreshing
+        loadingState.value = LoadingState.Refreshing
     }
 
     fun onReloadClick() {
         reloadImages()
-        gridState = GridState.Loading
+        loadingState.value = LoadingState.Loading
     }
 
     fun onSearchClick() {
-        isSearchBarOpen = true
+        isSearchBarOpen.value = true
     }
 
     fun onModeClick() {
-        mode = if (mode == Mode.Grid) {
-            Mode.List
+        gridMode.value = if (gridMode.value == ImageGridUiState.GridMode.Grid) {
+            ImageGridUiState.GridMode.List
         } else {
-            Mode.Grid
+            ImageGridUiState.GridMode.Grid
         }
     }
 
@@ -111,7 +139,7 @@ class ImageGridViewModel(
         if (value.endsWith(" ")) {
             addTagAndSearch(value.trim())
         } else {
-            searchText = value
+            searchText.value = value
         }
     }
 
@@ -120,35 +148,37 @@ class ImageGridViewModel(
     }
 
     fun onSearchBackClick() {
-        isSearchBarOpen = false
+        isSearchBarOpen.value = false
         clearSearchText()
     }
 
     fun onSearchConfirm() {
-        addTagAndSearch(searchText)
-        isSearchBarOpen = false
+        addTagAndSearch(searchText.value)
+        isSearchBarOpen.value = false
     }
 
-    fun onChipClicked(value: String) {
-        searchTags = searchTags.filterNot { it == value }
+    fun onChipClick(value: String) {
+        searchTags.update { searchTags -> searchTags - value }
         reloadImages()
-        gridState = GridState.Refreshing
+        loadingState.value = LoadingState.Refreshing
     }
 
     private fun addTagAndSearch(value: String) {
-        searchTags = searchTags + value
-        clearSearchText()
-        reloadImages()
-        gridState = GridState.Refreshing
+        if (value.isNotBlank()) {
+            searchTags.update { it + value }
+            clearSearchText()
+            reloadImages()
+            loadingState.value = LoadingState.Refreshing
+        }
     }
 
     private fun clearSearchText() {
-        searchText = ""
+        searchText.value = ""
     }
 
     private fun reloadImages() {
         viewModelScope.launch {
-            reloadImagesUseCase(searchTags)
+            reloadImagesUseCase(searchTags.value.toList())
         }
     }
 

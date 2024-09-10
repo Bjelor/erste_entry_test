@@ -1,6 +1,9 @@
 package com.bjelor.erste.domain
 
 sealed interface FlickrResult {
-    class Success(val images: List<Image>) : FlickrResult
-    object Error : FlickrResult
+
+    val images: List<Image>
+
+    data class Success(override val images: List<Image>) : FlickrResult
+    data class Error(override val images: List<Image>, val errorMessage: String? = null) : FlickrResult
 }

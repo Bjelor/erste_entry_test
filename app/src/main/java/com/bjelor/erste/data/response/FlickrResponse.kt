@@ -1,4 +1,4 @@
-package com.bjelor.erste.data
+package com.bjelor.erste.data.response
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass

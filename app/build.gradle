@@ -1,15 +1,17 @@
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlin)
+    alias(libs.plugins.kotlinCompose)
+    alias(libs.plugins.ksp)
 }
 
 android {
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.bjelor.erste"
         minSdk 23
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -43,13 +45,11 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    namespace 'com.bjelor.erste'
 }
 
 dependencies {
 
-
-    implementation(libs.accompanistNavigation)
-    implementation(libs.accompanistSwipeRefresh)
     implementation(libs.activityCompose)
     implementation(libs.coil)
     implementation(libs.composeMaterial)
@@ -62,12 +62,15 @@ dependencies {
     implementation(libs.koinCompose)
     implementation(libs.koinCore)
     implementation(libs.kotlinCoroutines)
-    implementation(libs.lifecycleRuntime)
-    implementation(libs.lifecycleViewModel)
     implementation(libs.moshi)
     implementation(libs.moshiKotlin)
+    implementation(libs.okhttpLogging)
     implementation(libs.retrofit)
     implementation(libs.retrofitMoshiConverter)
+    implementation(libs.room)
+    implementation(libs.roomKtx)
+
+    ksp(libs.roomCompiler)
 
     testImplementation(libs.mockk)
     testImplementation 'junit:junit:4.13.2'

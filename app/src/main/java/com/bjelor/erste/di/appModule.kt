@@ -1,8 +1,10 @@
 package com.bjelor.erste.di
 
-import com.bjelor.erste.data.FlickrLocalCache
+import androidx.room.Room
+import com.bjelor.erste.data.FlickrApiHeaderInterceptor
+import com.bjelor.erste.data.FlickrDatabase
+import com.bjelor.erste.data.FlickrImageDao
 import com.bjelor.erste.data.FlickrService
-import com.bjelor.erste.data.ImageMapper
 import com.bjelor.erste.data.RetrofitFactory
 import com.bjelor.erste.domain.FlickrRepository
 import com.bjelor.erste.domain.GetImageByUrlUseCase
@@ -12,27 +14,39 @@ import com.bjelor.erste.ui.imagedetail.ImageDetailViewModel
 import com.bjelor.erste.ui.imagegrid.ImageGridViewModel
 import kotlinx.coroutines.Dispatchers
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModelOf
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import retrofit2.Retrofit
 
 val appModule = module {
 
-    viewModel { ImageGridViewModel(get(), get(), get()) }
+    viewModelOf(::ImageGridViewModel)
     viewModel { parametersHolder -> ImageDetailViewModel(parametersHolder.get(), get()) }
 
-    single { RetrofitFactory().create() }
+    single(qualifier = RetrofitInjection.Flickr.qualifier) {
+        RetrofitFactory().create(
+            RetrofitInjection.Flickr.baseUrl,
+            FlickrApiHeaderInterceptor(),
+        )
+    }
 
-    factory { ImageMapper() }
+    single {
+        Room.databaseBuilder(
+            get(),
+            FlickrDatabase::class.java, "flickr-database"
+        ).build()
+    }
 
     factory { GetImageByUrlUseCase(get()) }
     factory { GetImagesUseCase(get()) }
     factory { ReloadImagesUseCase(get()) }
 
-    single { FlickrRepository(get(), get(), get(), get()) }
+    singleOf(::FlickrRepository)
 
-    single { FlickrLocalCache() }
+    single<FlickrImageDao> { get<FlickrDatabase>().flickrImageDao() }
 
-    factory { get<Retrofit>().create(FlickrService::class.java) }
+    factory { get<Retrofit>(RetrofitInjection.Flickr.qualifier).create(FlickrService::class.java) }
 
     single { Dispatchers }
 }

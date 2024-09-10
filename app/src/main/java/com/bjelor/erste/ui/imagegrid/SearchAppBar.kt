@@ -4,19 +4,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -68,13 +74,12 @@ fun ClosedSearchAppBar(
                 Icon(imageVector = Icons.Filled.Search, contentDescription = null)
             }
             IconButton(onClick = onModeClick) {
-                Icon(imageVector = Icons.Filled.List, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = null)
             }
         }
     )
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun OpenSearchAppBar(
     searchText: String,
@@ -90,7 +95,7 @@ fun OpenSearchAppBar(
         title = {},
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
         },
         actions = {
@@ -98,7 +103,15 @@ fun OpenSearchAppBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 2.dp)
-                    .focusRequester(focusRequester),
+                    .focusRequester(focusRequester)
+                    .onKeyEvent {
+                        if (it.key == Key.Enter) {
+                            onConfirm()
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 value = searchText,
                 onValueChange = onSearchTextChanged,
                 placeholder = {
@@ -110,7 +123,7 @@ fun OpenSearchAppBar(
                 keyboardActions = KeyboardActions(
                     onDone = {
                         keyboardController?.hide()
-                        onConfirm.invoke()
+                        onConfirm()
                     }
                 ),
                 trailingIcon = {
