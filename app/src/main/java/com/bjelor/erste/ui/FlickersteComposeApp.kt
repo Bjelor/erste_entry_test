@@ -1,25 +1,28 @@
 package com.bjelor.erste.ui
 
-import androidx.compose.animation.*
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.bjelor.erste.ui.imagedetail.ImageDetailScreen
 import com.bjelor.erste.ui.imagegrid.ImageGridScreen
 import com.bjelor.erste.ui.theme.FlickersteTheme
-import com.google.accompanist.navigation.animation.AnimatedNavHost
-import com.google.accompanist.navigation.animation.composable
-import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun FlickersteComposeApp(
     onShare: (String) -> Unit,
 ) {
     FlickersteTheme {
-        val navController = rememberAnimatedNavController()
+        val navController = rememberNavController()
 
-        AnimatedNavHost(
+        NavHost(
             navController = navController,
             startDestination = NavRoute.ImageGrid
         ) {

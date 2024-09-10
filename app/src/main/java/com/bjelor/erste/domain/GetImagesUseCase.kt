@@ -1,8 +1,8 @@
 package com.bjelor.erste.domain
 
-import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.Flow
 
 class GetImagesUseCase(private val flickrRepository: FlickrRepository) {
 
-    operator fun invoke(): SharedFlow<FlickrResult> = flickrRepository.getFlickrResult()
+    operator fun invoke(): Flow<FlickrResult> = flickrRepository.flickrResult
 }

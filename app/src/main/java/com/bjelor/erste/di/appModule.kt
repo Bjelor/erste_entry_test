@@ -1,9 +1,10 @@
 package com.bjelor.erste.di
 
+import androidx.room.Room
 import com.bjelor.erste.data.FlickrApiHeaderInterceptor
-import com.bjelor.erste.data.FlickrLocalCache
+import com.bjelor.erste.data.FlickrDatabase
+import com.bjelor.erste.data.FlickrImageDao
 import com.bjelor.erste.data.FlickrService
-import com.bjelor.erste.data.ImageMapper
 import com.bjelor.erste.data.RetrofitFactory
 import com.bjelor.erste.domain.FlickrRepository
 import com.bjelor.erste.domain.GetImageByUrlUseCase
@@ -14,6 +15,7 @@ import com.bjelor.erste.ui.imagegrid.ImageGridViewModel
 import kotlinx.coroutines.Dispatchers
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.androidx.viewmodel.dsl.viewModelOf
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import retrofit2.Retrofit
 
@@ -29,15 +31,20 @@ val appModule = module {
         )
     }
 
-    factory { ImageMapper() }
+    single {
+        Room.databaseBuilder(
+            get(),
+            FlickrDatabase::class.java, "flickr-database"
+        ).build()
+    }
 
     factory { GetImageByUrlUseCase(get()) }
     factory { GetImagesUseCase(get()) }
     factory { ReloadImagesUseCase(get()) }
 
-    single { FlickrRepository(get(), get(), get(), get()) }
+    singleOf(::FlickrRepository)
 
-    single { FlickrLocalCache() }
+    single<FlickrImageDao> { get<FlickrDatabase>().flickrImageDao() }
 
     factory { get<Retrofit>(RetrofitInjection.Flickr.qualifier).create(FlickrService::class.java) }
 

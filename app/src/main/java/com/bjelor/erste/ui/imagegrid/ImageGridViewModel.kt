@@ -46,9 +46,8 @@ class ImageGridViewModel(
     private val searchText: MutableStateFlow<String> =
         MutableStateFlow("")
 
-    private val searchTags: MutableStateFlow<List<String>> =
-        MutableStateFlow(emptyList())
-
+    private val searchTags: MutableStateFlow<Set<String>> =
+        MutableStateFlow(emptySet())
 
     val state: StateFlow<ImageGridUiState> = combine(
         imagesResult,
@@ -65,21 +64,23 @@ class ImageGridViewModel(
             searchText,
             searchTags,
         ->
-        val images = when (imagesResult) {
-            is FlickrResult.Error -> emptyList()
-            is FlickrResult.Success -> imagesResult.images
-        }
+        val images = imagesResult.images
 
         val gridState = when (loadingState) {
             LoadingState.Loading -> ImageGridUiState.GridState.Loading
             LoadingState.Refreshing -> ImageGridUiState.GridState.Refreshing
             null -> when (imagesResult) {
                 is FlickrResult.Error -> {
-                    ImageGridUiState.GridState.Error
+                    // TODO: Better representation of Error state with cached images
+                    if (images.isNotEmpty()) {
+                        ImageGridUiState.GridState.Loaded
+                    } else {
+                        ImageGridUiState.GridState.Error
+                    }
                 }
 
                 is FlickrResult.Success -> {
-                    if (imagesResult.images.isNotEmpty()) {
+                    if (images.isNotEmpty()) {
                         ImageGridUiState.GridState.Loaded
                     } else {
                         ImageGridUiState.GridState.Empty
@@ -88,17 +89,16 @@ class ImageGridViewModel(
             }
         }
 
-
         ImageGridUiState(
             images,
             gridState,
             isSearchBarOpen,
             gridMode,
             searchText,
-            searchTags
+            searchTags.toList()
         )
     }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), ImageGridUiState())
+        .stateIn(viewModelScope, SharingStarted.Lazily, ImageGridUiState())
 
     init {
         reloadImages()
@@ -158,16 +158,18 @@ class ImageGridViewModel(
     }
 
     fun onChipClick(value: String) {
-        searchTags.update { searchTags -> searchTags.filterNot { it == value } }
+        searchTags.update { searchTags -> searchTags - value }
         reloadImages()
         loadingState.value = LoadingState.Refreshing
     }
 
     private fun addTagAndSearch(value: String) {
-        searchTags.update { it + value }
-        clearSearchText()
-        reloadImages()
-        loadingState.value = LoadingState.Refreshing
+        if (value.isNotBlank()) {
+            searchTags.update { it + value }
+            clearSearchText()
+            reloadImages()
+            loadingState.value = LoadingState.Refreshing
+        }
     }
 
     private fun clearSearchText() {
@@ -176,7 +178,7 @@ class ImageGridViewModel(
 
     private fun reloadImages() {
         viewModelScope.launch {
-            reloadImagesUseCase(searchTags.value)
+            reloadImagesUseCase(searchTags.value.toList())
         }
     }
 

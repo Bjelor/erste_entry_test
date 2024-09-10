@@ -10,14 +10,13 @@ import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -75,13 +74,12 @@ fun ClosedSearchAppBar(
                 Icon(imageVector = Icons.Filled.Search, contentDescription = null)
             }
             IconButton(onClick = onModeClick) {
-                Icon(imageVector = Icons.Filled.List, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = null)
             }
         }
     )
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun OpenSearchAppBar(
     searchText: String,
@@ -97,7 +95,7 @@ fun OpenSearchAppBar(
         title = {},
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
-                Icon(imageVector = Icons.Filled.ArrowBack, contentDescription = null)
+                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             }
         },
         actions = {

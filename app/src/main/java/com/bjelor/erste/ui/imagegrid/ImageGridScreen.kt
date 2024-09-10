@@ -22,11 +22,15 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -42,9 +46,7 @@ import com.bjelor.erste.R
 import com.bjelor.erste.domain.Image
 import com.bjelor.erste.ui.theme.FlickersteTheme
 import com.bjelor.erste.ui.theme.VerticalGradientBlack
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
-import org.koin.androidx.compose.getViewModel
+import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
@@ -52,7 +54,7 @@ fun ImageGridScreen(
     onNavigateToImageDetail: (String) -> Unit,
 ) {
     val viewModel: ImageGridViewModel =
-        getViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
+        koinViewModel(parameters = { parametersOf(onNavigateToImageDetail) })
 
     val state = viewModel.state.collectAsState().value
 
@@ -145,6 +147,7 @@ private fun ImageGridScreen(
     }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun ImageGrid(
     paddingValues: PaddingValues,
@@ -154,10 +157,9 @@ private fun ImageGrid(
     onImageClicked: (Image) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    SwipeRefresh(
-        state = rememberSwipeRefreshState(isRefreshing),
-        onRefresh = onRefresh,
-    ) {
+    val pullRefreshState = rememberPullRefreshState(isRefreshing, onRefresh)
+
+    Box(Modifier.pullRefresh(pullRefreshState)) {
         LazyVerticalGrid(
             modifier = Modifier
                 .padding(paddingValues)
@@ -191,12 +193,15 @@ private fun ImageGrid(
                             .background(Brush.verticalGradient(VerticalGradientBlack))
                             .align(Alignment.BottomCenter),
                         text = image.title,
+                        color = MaterialTheme.colors.surface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
+
+        PullRefreshIndicator(isRefreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
     }
 }
 
@@ -269,9 +274,9 @@ fun ImageGridScreenLoadedGridPreview() {
         ImageGridScreen(
             state = ImageGridUiState(
                 listOf(
-                    Image("", "Something"),
-                    Image("", "Else"),
-                    Image("", "Anything"),
+                    Image("", "Something", ""),
+                    Image("", "Else", ""),
+                    Image("", "Anything", ""),
                 ),
                 gridState = ImageGridUiState.GridState.Loaded,
             ),
@@ -287,9 +292,9 @@ fun ImageGridScreenLoadedListPreview() {
         ImageGridScreen(
             state = ImageGridUiState(
                 listOf(
-                    Image("", "Something"),
-                    Image("", "Else"),
-                    Image("", "Anything"),
+                    Image("", "Something", ""),
+                    Image("", "Else", ""),
+                    Image("", "Anything", ""),
                 ),
                 gridState = ImageGridUiState.GridState.Loaded,
                 gridMode = ImageGridUiState.GridMode.List,
