@@ -71,7 +71,6 @@ class ImageGridViewModel(
             LoadingState.Refreshing -> ImageGridUiState.GridState.Refreshing
             null -> when (imagesResult) {
                 is FlickrResult.Error -> {
-                    // TODO: Better representation of Error state with cached images
                     if (images.isNotEmpty()) {
                         ImageGridUiState.GridState.Loaded
                     } else {
@@ -89,13 +88,16 @@ class ImageGridViewModel(
             }
         }
 
+        val errorMessage = (imagesResult as? FlickrResult.Error)?.errorMessage
+
         ImageGridUiState(
             images,
             gridState,
             isSearchBarOpen,
             gridMode,
             searchText,
-            searchTags.toList()
+            searchTags.toList(),
+            errorMessage,
         )
     }
         .stateIn(viewModelScope, SharingStarted.Lazily, ImageGridUiState())

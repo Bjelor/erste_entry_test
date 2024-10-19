@@ -1,5 +1,6 @@
 package com.bjelor.erste.ui.imagegrid
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,11 +31,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.bjelor.erste.R
+import com.bjelor.erste.ui.imagegrid.ImageGridUiState.GridMode
 
 @Composable
 fun SearchAppBar(
     isOpen: Boolean,
     searchText: String,
+    selectedMode: GridMode,
     onSearchTextChanged: (String) -> Unit,
     onClearClick: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -50,7 +54,7 @@ fun SearchAppBar(
             onConfirm = onConfirm
         )
     } else {
-        ClosedSearchAppBar(searchText, onSearchClick, onModeClick)
+        ClosedSearchAppBar(searchText, selectedMode, onSearchClick, onModeClick)
     }
 
 }
@@ -58,9 +62,15 @@ fun SearchAppBar(
 @Composable
 fun ClosedSearchAppBar(
     searchText: String,
+    selectedMode: GridMode,
     onSearchClick: () -> Unit,
     onModeClick: () -> Unit,
 ) {
+    val modeIcon = when (selectedMode) {
+        GridMode.Grid -> Icons.AutoMirrored.Filled.List
+        GridMode.List -> Icons.Filled.GridView
+    }
+
     TopAppBar(
         title = {
             if (searchText.isNotEmpty()) {
@@ -74,7 +84,9 @@ fun ClosedSearchAppBar(
                 Icon(imageVector = Icons.Filled.Search, contentDescription = null)
             }
             IconButton(onClick = onModeClick) {
-                Icon(imageVector = Icons.AutoMirrored.Filled.List, contentDescription = null)
+                AnimatedContent(modeIcon, label = "ModeAnimation") { icon ->
+                    Icon(imageVector = icon, contentDescription = null)
+                }
             }
         }
     )
@@ -145,7 +157,7 @@ fun OpenSearchAppBar(
 @Preview
 @Composable
 private fun ClosedSearchAppBarPreview() {
-    ClosedSearchAppBar(searchText = "Title", {}, {})
+    ClosedSearchAppBar(searchText = "Title", selectedMode = GridMode.List, {}, {})
 }
 
 @Preview

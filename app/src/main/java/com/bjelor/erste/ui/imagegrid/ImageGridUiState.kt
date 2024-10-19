@@ -9,6 +9,7 @@ data class ImageGridUiState(
     val gridMode: GridMode = GridMode.Grid,
     val searchText: String = "",
     val searchTags: List<String> = emptyList(),
+    val errorMessage: String? = null,
 ) {
     enum class GridState {
         Refreshing,
